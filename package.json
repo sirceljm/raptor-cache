@@ -21,7 +21,9 @@
     ],
     "maintainers": "Patrick Steele-Idem <psteeleidem@ebay.com>",
     "dependencies": {
-        "raptor-util": "0.1.0-SNAPSHOT"
+        "raptor-util": "0.1.0-SNAPSHOT",
+        "property-handlers": "~0.1.0",
+        "raptor-promises": "~0.1.0-SNAPSHOT"
     },
     "devDependencies": {
         "mocha": "~1.15.1",

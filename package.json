@@ -1,5 +1,4 @@
 {
-    "path": "/Users/psteeleidem/development/github/raptorjs3/raptor-cache/package.json",
     "name": "raptor-cache",
     "description": "Simple cache implementation",
     "keywords": [
@@ -39,5 +38,5 @@
         "registry": "https://registry.npmjs.org/"
     },
     "ebay": {},
-    "version": "0.2.2-beta"
+    "version": "0.2.3-beta"
 }

@@ -24,8 +24,7 @@
         "raptor-util": "^0.2.0-beta",
         "raptor-logging": "^0.2.0-beta",
         "property-handlers": "~0.1.0",
-        "raptor-promises": "^0.2.0-beta",
-        "then-fs": "~1.0.4"
+        "raptor-promises": "^0.2.0-beta"
     },
     "devDependencies": {
         "mocha": "~1.15.1",

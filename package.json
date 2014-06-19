@@ -1,42 +1,42 @@
 {
-  "name": "raptor-cache",
-  "description": "Simple cache implementation",
-  "keywords": [
-    "AMD",
-    "modules",
-    "loader"
-  ],
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/raptorjs3/raptor-cache.git"
-  },
-  "scripts": {
-    "test": "node_modules/.bin/mocha --ui bdd --reporter spec  ./test"
-  },
-  "author": "Patrick Steele-Idem <pnidem@gmail.com>",
-  "contributors": [
-    "Patrick Steele-Idem <pnidem@gmail.com>",
-    "Phillip Gates-Idem <phillip.idem@gmail.com>"
-  ],
-  "maintainers": "Patrick Steele-Idem <pnidem@gmail.com>",
-  "dependencies": {
-    "raptor-files": "^0.2.0-beta",
-    "raptor-util": "^0.2.0-beta",
-    "raptor-logging": "^0.2.0-beta",
-    "property-handlers": "^0.1.0",
-    "raptor-promises": "^0.2.0-beta",
-    "then-fs": "^1.0.6"
-  },
-  "devDependencies": {
-    "mocha": "~1.15.1",
-    "chai": "~1.8.1"
-  },
-  "license": "Apache License v2.0",
-  "bin": {},
-  "main": "lib/raptor-cache.js",
-  "publishConfig": {
-    "registry": "https://registry.npmjs.org/"
-  },
-  "ebay": {},
-  "version": "0.2.10-beta"
+    "name": "raptor-cache",
+    "description": "Simple cache implementation",
+    "keywords": [
+        "AMD",
+        "modules",
+        "loader"
+    ],
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/raptorjs3/raptor-cache.git"
+    },
+    "scripts": {
+        "test": "node_modules/.bin/mocha --ui bdd --reporter spec  ./test"
+    },
+    "author": "Patrick Steele-Idem <pnidem@gmail.com>",
+    "contributors": [
+        "Patrick Steele-Idem <pnidem@gmail.com>",
+        "Phillip Gates-Idem <phillip.idem@gmail.com>"
+    ],
+    "maintainers": "Patrick Steele-Idem <pnidem@gmail.com>",
+    "dependencies": {
+        "raptor-files": "^0.2.0-beta",
+        "raptor-util": "^0.2.0-beta",
+        "raptor-logging": "^0.2.0-beta",
+        "property-handlers": "^0.1.0",
+        "raptor-promises": "^0.2.0-beta",
+        "then-fs": "^1.0.6"
+    },
+    "devDependencies": {
+        "mocha": "~1.15.1",
+        "chai": "~1.8.1"
+    },
+    "license": "Apache License v2.0",
+    "bin": {},
+    "main": "lib/raptor-cache.js",
+    "publishConfig": {
+        "registry": "https://registry.npmjs.org/"
+    },
+    "ebay": {},
+    "version": "0.2.11-beta"
 }

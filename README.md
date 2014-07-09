@@ -23,7 +23,7 @@ var cache = raptorCache.createCache({
     
     // Disk store specific config:
     dir: '.cache/my-cache',
-    flushDelay: 1000, // Commit cached values to disk after 1s of not write activity
+    flushDelay: 1000, // Commit cached values to disk after 1s of no write activity
     encoding: 'utf8'
 });
 
@@ -87,7 +87,7 @@ Configuration options:
 var raptorCache = require('raptor-cache');
 var cache = raptorCache.createDiskCache({
     dir: 'some/directory',
-    combined: true,
+    singleFile: true,
     flushDelay: 1000,
     ...
 });
@@ -109,7 +109,7 @@ Configuration options:
 var raptorCache = require('raptor-cache');
 var cache = raptorCache.createDiskCache({
     dir: 'some/directory',
-    combined: false,
+    singleFile: false,
     flushDelay: 1000,
     ...
 });

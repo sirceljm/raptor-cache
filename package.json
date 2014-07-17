@@ -20,6 +20,7 @@
   ],
   "maintainers": "Patrick Steele-Idem <pnidem@gmail.com>",
   "dependencies": {
+    "app-root-dir": "^1.0.0",
     "binary": "^0.3.0",
     "mkdirp": "^0.5.0",
     "node-uuid": "^1.4.1",

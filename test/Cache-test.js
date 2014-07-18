@@ -2,21 +2,20 @@ var chai = require('chai');
 chai.Assertion.includeStack = true;
 require('chai').should();
 var expect = require('chai').expect;
-var series = require('raptor-async/series');
 var parallel = require('raptor-async/parallel');
 var raptorCache = require('../');
 
 describe('raptor-cache' , function() {
 
-    beforeEach(function(done) {
-        require('raptor-logging').configureLoggers({
-            'raptor-cache': 'DEBUG'
-        });
+    // beforeEach(function(done) {
+    //     require('raptor-logging').configureLoggers({
+    //         'raptor-cache': 'DEBUG'
+    //     });
 
-        done();
-    });
+    //     done();
+    // });
 
-    it("should invoke callback with null for missing cache entry", function(done) {
+    it('should invoke callback with null for missing cache entry', function(done) {
         var cache = raptorCache.createMemoryCache();
         parallel([
                 function(callback) {
@@ -33,7 +32,7 @@ describe('raptor-cache' , function() {
             done);
     });
 
-    it("should retrieve a key using a builder", function(done) {
+    it('should retrieve a key using a builder', function(done) {
         var cache = raptorCache.createMemoryCache();
         parallel([
                 function(callback) {
@@ -54,7 +53,7 @@ describe('raptor-cache' , function() {
             done);
     });
 
-    it("should delay reads when a value is being built", function(done) {
+    it('should delay reads when a value is being built', function(done) {
         var cache = raptorCache.createMemoryCache();
         parallel([
                 function(callback) {

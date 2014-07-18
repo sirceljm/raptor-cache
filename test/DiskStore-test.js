@@ -55,7 +55,7 @@ function checkValue(store, key, expectedValue, callback) {
             }
 
             if (typeof expectedValue === 'string' || typeof actualValue === 'string') {
-                expect(actualValue).to.equal(expectedValue);    
+                expect(actualValue).to.equal(expectedValue);
             } else if (expectedValue instanceof Buffer || actualValue instanceof Buffer) {
                 if (expectedValue == null || actualValue == null) {
                     throw new Error('Buffers do not match for key "' + key + '"');
@@ -108,7 +108,7 @@ var dir = nodePath.join(__dirname, '.cache');
 function getConfig(config, overrides) {
     config = extend({}, config || {});
     if (overrides) {
-        extend(config, overrides);    
+        extend(config, overrides);
     }
     return config;
 }
@@ -123,7 +123,7 @@ var stores = [
             singleFile: true
         },
         create: function(overrides) {
-            return new DiskStore(getConfig(this.config, overrides));    
+            return new DiskStore(getConfig(this.config, overrides));
         }
     },
     {
@@ -135,7 +135,7 @@ var stores = [
             singleFile: false
         },
         create: function(overrides) {
-            return new DiskStore(getConfig(this.config, overrides));    
+            return new DiskStore(getConfig(this.config, overrides));
         }
     }
 ];
@@ -153,7 +153,7 @@ describe('raptor-cache/DiskStore' , function() {
     });
 
     stores.forEach(function(storeProvider) {
-        it("should allow flushed store to be read back correctly - " + storeProvider.label, function(done) {
+        it('should allow flushed store to be read back correctly - ' + storeProvider.label, function(done) {
             var store = storeProvider.create();
 
             store.put('hello', 'world');
@@ -190,7 +190,7 @@ describe('raptor-cache/DiskStore' , function() {
                 });
         });
 
-        it("should handle removals correctly - " + storeProvider.label, function(done) {
+        it('should handle removals correctly - ' + storeProvider.label, function(done) {
             var store = storeProvider.create();
 
             store.put('hello', 'world');
@@ -234,7 +234,7 @@ describe('raptor-cache/DiskStore' , function() {
                 });
         });
 
-        it("should schedule flushes correctly - " + storeProvider.label, function(done) {
+        it('should schedule flushes correctly - ' + storeProvider.label, function(done) {
             
             var store = storeProvider.create({
                 flushDelay: 100
@@ -253,7 +253,7 @@ describe('raptor-cache/DiskStore' , function() {
             }, 200);
         });
 
-        it("should handle writes after flush - " + storeProvider.label, function(done) {
+        it('should handle writes after flush - ' + storeProvider.label, function(done) {
             var store = storeProvider.create();
             store.put('hello', 'world');
             store.flush();
@@ -270,13 +270,13 @@ describe('raptor-cache/DiskStore' , function() {
             });
         });
 
-        it("should allow reader for cache entry - " + storeProvider.label, function(done) {
+        it('should allow reader for cache entry - ' + storeProvider.label, function(done) {
             var store = storeProvider.create();
 
             store.put('hello', new CacheEntry({
                 reader: function() {
                     return fs.createReadStream(nodePath.join(__dirname, 'large.txt'), 'utf8');
-                }    
+                }
             }));
 
             store.put('foo', 'bar');
@@ -295,14 +295,14 @@ describe('raptor-cache/DiskStore' , function() {
             });
         });
 
-        it("should allow binary reader for cache entry - " + storeProvider.label, function(done) {
+        it('should allow binary reader for cache entry - ' + storeProvider.label, function(done) {
             var config = {encoding: null};
             var store = storeProvider.create(config);
 
             store.put('hello', new CacheEntry({
                 reader: function() {
                     return fs.createReadStream(nodePath.join(__dirname, 'large.txt'));
-                }    
+                }
             }));
 
             store.put('foo', new Buffer('bar', 'utf8'));
@@ -321,7 +321,7 @@ describe('raptor-cache/DiskStore' , function() {
             });
         });
 
-        it("should allow a serializer/deserializer to be used - " + storeProvider.label, function(done) {
+        it('should allow a serializer/deserializer to be used - ' + storeProvider.label, function(done) {
             var config = {
                 serialize: function(value) {
                     return JSON.stringify(value);

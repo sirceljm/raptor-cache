@@ -5,7 +5,6 @@ var expect = require('chai').expect;
 var nodePath = require('path');
 var fs = require('fs');
 var series = require('raptor-async/series');
-var through = require('through');
 var DiskStore = require('../lib/DiskStore');
 var CacheEntry = require('../lib/CacheEntry');
 var extend = require('raptor-util/extend');
@@ -28,6 +27,20 @@ function removeCacheDir(dir) {
     } catch(e) {}
 }
 
+function buffersEqual(actualValue, expectedValue) {
+    if (expectedValue.length !== actualValue.length) {
+        return false;
+    }
+
+    for (var i = 0; i < expectedValue.length; i++) {
+        if (expectedValue[i] !== actualValue[i]) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 function checkValue(store, key, expectedValue, callback) {
     store.get(key, function(err, cacheEntry) {
         if (err) {
@@ -35,7 +48,7 @@ function checkValue(store, key, expectedValue, callback) {
         }
 
         if (!cacheEntry) {
-            if (expectedValue == null) {
+            if (expectedValue === undefined) {
                 // We are good
                 callback();
             } else {
@@ -44,39 +57,44 @@ function checkValue(store, key, expectedValue, callback) {
             return;
         }
 
-        cacheEntry.readValue(function(err, actualValue) {
-            if (err) {
-                return callback(err);
-            }
-
-            if (typeof expectedValue === 'function') {
-                expectedValue(actualValue);
-                return callback();
-            }
-
-            if (typeof expectedValue === 'string' || typeof actualValue === 'string') {
-                expect(actualValue).to.equal(expectedValue);
-            } else if (expectedValue instanceof Buffer || actualValue instanceof Buffer) {
-                if (expectedValue == null || actualValue == null) {
-                    throw new Error('Buffers do not match for key "' + key + '"');
+        if (cacheEntry.deserialize || cacheEntry.deserialized) {
+            cacheEntry.readValue(function(err, actualValue) {
+                if (err) {
+                    return callback(err);
                 }
 
-                if (expectedValue.length != actualValue.length) {
-                    throw new Error('Buffers do not match for key "' + key + '"');
+                if (typeof expectedValue === 'function') {
+                    expectedValue(actualValue);
+                } else {
+                    expect(actualValue).to.equal(expectedValue);
                 }
 
-                for (var i=0; i<expectedValue.length; i++) {
-                    if (expectedValue[i] !== actualValue[i]) {
-                        throw new Error('Buffers do not match for key "' + key + '"');
-                    }
+                callback();
+            });
+        } else {
+            expect(store.encoding).to.equal(cacheEntry.encoding);
+
+            cacheEntry.readRaw(function(err, rawValue) {
+                if (err) {
+                    return callback(err);
                 }
 
-            } else {
-                throw new Error('Illegal state.');
-            }
-            
-            callback();
-        });
+                if (store.encoding) {
+                    // if there is an encoding disk store will return decode as string for us
+                    expect(rawValue).to.be.a('string');
+
+                    expect(rawValue).to.equal(expectedValue);
+                } else {
+                    // no encoding so working with raw Buffer objects
+                    expect(rawValue).to.be.an.instanceof(Buffer);
+                    expect(buffersEqual(rawValue, expectedValue)).to.equal(true);
+                }
+
+                callback();
+            });
+        }
+
+        
     });
 }
 
@@ -117,6 +135,7 @@ var stores = [
     {
         label: 'DiskStore - single-file',
         config: {
+            name: 'single-file',
             dir: dir,
             encoding: 'utf8',
             flushDelay: -1,
@@ -129,6 +148,7 @@ var stores = [
     {
         label: 'DiskStore - multi-file',
         config: {
+            name: 'multi-file',
             dir: dir,
             encoding: 'utf8',
             flushDelay: -1,
@@ -144,7 +164,7 @@ describe('raptor-cache/DiskStore' , function() {
 
     beforeEach(function(done) {
         require('raptor-logging').configureLoggers({
-            'raptor-cache': 'DEBUG'
+            'raptor-cache': 'WARN'
         });
 
         removeCacheDir(dir);
@@ -155,6 +175,7 @@ describe('raptor-cache/DiskStore' , function() {
     stores.forEach(function(storeProvider) {
         it('should allow flushed store to be read back correctly - ' + storeProvider.label, function(done) {
             var store = storeProvider.create();
+            expect(store.encoding).to.equal('utf8');
 
             store.put('hello', 'world');
             store.put('foo', 'bar');
@@ -164,7 +185,7 @@ describe('raptor-cache/DiskStore' , function() {
                         checkValues(store, {
                             'foo': 'bar',
                             'hello': 'world',
-                            'missing': null
+                            'missing': undefined
                         }, callback);
                     },
                     function (callback) {
@@ -174,10 +195,11 @@ describe('raptor-cache/DiskStore' , function() {
                             }
 
                             var store = storeProvider.create();
+                            expect(store.encoding).to.equal('utf8');
                             checkValues(store, {
                                 'foo': 'bar',
                                 'hello': 'world',
-                                'missing': null
+                                'missing': undefined
                             }, callback);
                         });
                     }
@@ -204,7 +226,7 @@ describe('raptor-cache/DiskStore' , function() {
                         checkValues(store, {
                             'hello': 'world',
                             'foo': 'bar',
-                            'remove': null,
+                            'remove': undefined,
                             'remove2': 'me2'
                         }, callback);
                     },
@@ -220,8 +242,8 @@ describe('raptor-cache/DiskStore' , function() {
                             checkValues(store, {
                                 'hello': 'world',
                                 'foo': 'bar',
-                                'remove': null,
-                                'remove2': null
+                                'remove': undefined,
+                                'remove2': undefined
                             }, callback);
                         });
                     }
@@ -327,17 +349,22 @@ describe('raptor-cache/DiskStore' , function() {
                     return JSON.stringify(value);
                 },
                 deserialize: function(reader, callback) {
-                    var readable = reader();
+                    expect(this.encoding).to.equal('utf8');
+                    expect(store.encoding).to.equal('utf8');
+                    
                     var json = '';
+                    var stream = reader();
 
-                    readable.pipe(through(
-                        function data(str) {
+                    //expect(strea)
+                    stream
+                        .on('data', function(str) {
                             expect(typeof str).to.equal('string');
                             json += str;
-                        },
-                        function end() {
+                        })
+
+                        .on('end', function() {
                             callback(null, JSON.parse(json));
-                        }));
+                        });
                 }
             };
 

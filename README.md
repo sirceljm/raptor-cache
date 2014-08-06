@@ -1,9 +1,6 @@
 raptor-cache
 ============
-This module provides an asynchronous caching framework that prevents duplicate work from being done by allowing a "hold" to be put on a cache entry. A hold only
-
-- A "hold" can be put on a key while it's value is being built to prevent duplicate work
-- Reads wait for all 
+This module provides an caching layer that supports asynchronous reading and writing and it prevents duplicate work from being done by allowing a "hold" to be put on a cache entry. A common pattern when utilizing a cache is to read from the cache and to then build the cached value if it was not found in the cache. By putting a hold on a cache entry while its value is being built asynchronously, this caching layer can ensure that a value for a particular key is only built once by the current process. This module solves the challenges of working with asynchronous cache stores and provides out-of-box support for an in-memory cache and a disk-based cache. It is possible to provide a custom cache store that connects to a centralized cache such as [Redis](http://redis.io/) or [memcached](http://memcached.org/).
 
 # Installation
 
@@ -54,12 +51,17 @@ cache.getReadStream(
 
 ### Memory Store
 
+Characteristics:
+
+- Every cache key and value is kept in memory 
+
 ```javascript
 var raptorCache = require('raptor-cache');
 var cache = raptorCache.createMemoryCache({
     ...
 });
 ```
+
 
 
 ### Disk Store (Combined File)
@@ -100,6 +102,7 @@ Characteristics:
 - Each cached value is stored in its own file (as raw bytes)
 - The cached values are not kept in memory (they can only be streamed from disk)
 - An index is maintained to keep up with what is in the cache
+- The entire index is kept in memory until the "free" delay is reached
 
 Configuration options:
 

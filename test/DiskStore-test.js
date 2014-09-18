@@ -15,7 +15,7 @@ function removeCacheDir(dir) {
         for (var i = 0; i < children.length; i++) {
             var file = nodePath.join(dir, children[i]);
             var stat = fs.statSync(file);
-            
+
             if (stat.isDirectory()) {
                 removeCacheDir(file);
             } else {
@@ -94,7 +94,7 @@ function checkValue(store, key, expectedValue, callback) {
             });
         }
 
-        
+
     });
 }
 
@@ -257,14 +257,14 @@ describe('raptor-cache/DiskStore' , function() {
         });
 
         it('should schedule flushes correctly - ' + storeProvider.label, function(done) {
-            
+
             var store = storeProvider.create({
-                flushDelay: 100
+                flushDelay: 50
             });
 
             store.put('schedule', 'flush');
             store.put('foo', 'bar');
-            
+
             setTimeout(function() {
                 var store = storeProvider.create();
 
@@ -272,7 +272,7 @@ describe('raptor-cache/DiskStore' , function() {
                     'schedule': 'flush',
                     'foo': 'bar'
                 }, done);
-            }, 200);
+            }, 500);
         });
 
         it('should handle writes after flush - ' + storeProvider.label, function(done) {
@@ -351,7 +351,7 @@ describe('raptor-cache/DiskStore' , function() {
                 deserialize: function(reader, callback) {
                     expect(this.encoding).to.equal('utf8');
                     expect(store.encoding).to.equal('utf8');
-                    
+
                     var json = '';
                     var stream = reader();
 
@@ -392,4 +392,3 @@ describe('raptor-cache/DiskStore' , function() {
         });
     });
 });
-

@@ -24,10 +24,10 @@
         "mkdirp": "^0.5.0",
         "node-uuid": "^1.4.1",
         "property-handlers": "^0.1.0",
-        "raptor-logging": "^1.0.0-beta",
-        "raptor-util": "^1.0.0-beta",
+        "raptor-logging": "^1.0.0",
+        "raptor-util": "^1.0.0",
         "through": "^2.3.4",
-        "raptor-async": "^1.0.0-beta"
+        "raptor-async": "^1.0.0"
     },
     "devDependencies": {
         "chai": "~1.8.1",

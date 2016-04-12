@@ -1,10 +1,10 @@
 {
   "name": "raptor-cache",
-  "description": "Simple cache implementation",
+  "description": "Efficient JavaScript cache implementation that is safe for concurrent reads and writes",
   "keywords": [
-    "AMD",
-    "modules",
-    "loader"
+    "cache",
+    "multi-process",
+    "concurrent"
   ],
   "repository": {
     "type": "git",
@@ -24,10 +24,10 @@
     "mkdirp": "^0.5.0",
     "node-uuid": "^1.4.1",
     "property-handlers": "^1.0.0",
+    "raptor-async": "^1.0.0",
     "raptor-logging": "^1.0.1",
     "raptor-util": "^1.0.0",
-    "through": "^2.3.4",
-    "raptor-async": "^1.0.0"
+    "through": "^2.3.4"
   },
   "devDependencies": {
     "chai": "~1.8.1",
@@ -40,6 +40,5 @@
   "publishConfig": {
     "registry": "https://registry.npmjs.org/"
   },
-  "ebay": {},
   "version": "1.2.0"
 }

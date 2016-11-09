@@ -390,5 +390,43 @@ describe('raptor-cache/DiskStore' , function() {
                 }, done);
             });
         });
+
+        it('should handle re-read after flush - ' + storeProvider.label, function(done) {
+            var config = {
+                serialize: function(value) {
+                    return value;
+                },
+                deserialize: function(reader, callback) {
+                    var data = '';
+                    var stream = reader();
+
+                    //expect(strea)
+                    stream
+                        .on('data', function(str) {
+                            data += str;
+                        })
+
+                        .on('end', function() {
+                            callback(null, data);
+                        });
+                }
+            };
+
+            var store = storeProvider.create(config);
+            store.put('hello', 'world');
+            store.flush();
+
+            store.put('foo', 'bar');
+
+            store.flush(function() {
+                store.get('foo', function (err, value) {
+                    value.readValue(function (err, value) {
+                        expect(value).to.equal('bar');
+                        done();
+                    });
+                });
+            });
+        });
+
     });
 });

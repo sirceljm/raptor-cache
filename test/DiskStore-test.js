@@ -413,9 +413,6 @@ describe('raptor-cache/DiskStore' , function() {
             };
 
             var store = storeProvider.create(config);
-            store.put('hello', 'world');
-            store.flush();
-
             store.put('foo', 'bar');
 
             store.flush(function() {

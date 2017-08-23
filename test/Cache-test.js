@@ -10,13 +10,15 @@ var nodePath = require('path');
 var crypto = require('crypto');
 var cacheDir = nodePath.join(__dirname, '.cache');
 
+var promisesExist = typeof Promise !== 'undefined';
+
 function removeCacheDir(dir) {
     try {
         var children = fs.readdirSync(dir);
         for (var i = 0; i < children.length; i++) {
             var file = nodePath.join(dir, children[i]);
             var stat = fs.statSync(file);
-            
+
             if (stat.isDirectory()) {
                 removeCacheDir(file);
             } else {
@@ -27,7 +29,6 @@ function removeCacheDir(dir) {
         fs.rmdirSync(dir);
     } catch(e) {}
 }
-
 
 describe('raptor-cache' , function() {
 
@@ -108,9 +109,9 @@ describe('raptor-cache' , function() {
         removeCacheDir(cacheDir);
 
         function createCache() {
-            return raptorCache.createDiskCache({singleFile: false, dir: cacheDir});   
+            return raptorCache.createDiskCache({singleFile: false, dir: cacheDir});
         }
-        
+
 
         var reader = function() {
             return fs.createReadStream(nodePath.join(__dirname, 'hello.txt'));
@@ -177,5 +178,20 @@ describe('raptor-cache' , function() {
             ],
             done);
     });
-});
 
+    // Promise tests that will only run on Node 4+
+    if (promisesExist) {
+        it('should retrieve a key using a builder that returns a promise', function () {
+            var cache = raptorCache.createMemoryCache();
+            return cache.get('hello', {
+                builder: function () {
+                    /* jshint ignore:start */
+                    return Promise.resolve('world');
+                    /* jshint ignore:end */
+                }
+            }).then(function (value) {
+                expect(value).to.equal('world');
+            });
+        });
+    }
+});

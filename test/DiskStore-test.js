@@ -344,6 +344,8 @@ describe('raptor-cache/DiskStore' , function() {
         });
 
         it('should allow a serializer/deserializer to be used - ' + storeProvider.label, function(done) {
+            var store;
+
             var config = {
                 serialize: function(value) {
                     return JSON.stringify(value);
@@ -368,7 +370,7 @@ describe('raptor-cache/DiskStore' , function() {
                 }
             };
 
-            var store = storeProvider.create(config);
+            store = storeProvider.create(config);
 
             store.put('hello', {hello: 'world'});
             store.put('foo', {foo: 'bar'});

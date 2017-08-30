@@ -1,3 +1,5 @@
+'use strict';
+
 var chai = require('chai');
 chai.Assertion.includeStack = true;
 require('chai').should();
@@ -16,7 +18,7 @@ function removeCacheDir(dir) {
         for (var i = 0; i < children.length; i++) {
             var file = nodePath.join(dir, children[i]);
             var stat = fs.statSync(file);
-            
+
             if (stat.isDirectory()) {
                 removeCacheDir(file);
             } else {
@@ -28,154 +30,137 @@ function removeCacheDir(dir) {
     } catch(e) {}
 }
 
-
 describe('raptor-cache' , function() {
 
-    // beforeEach(function(done) {
-    //     require('raptor-logging').configureLoggers({
-    //         'raptor-cache': 'DEBUG'
-    //     });
-
-    //     done();
-    // });
-
-    it('should invoke callback with null for missing cache entry', function(done) {
-        var cache = raptorCache.createMemoryCache();
-        parallel([
-                function(callback) {
-                    cache.get('hello', function(err, value) {
-                        if (err) {
-                            return callback(err);
-                        }
-
-                        expect(value == null).to.equal(true);
-                        callback();
-                    });
-                }
-            ],
-            done);
+    beforeEach(() => {
+        require('raptor-logging').configureLoggers({
+            'raptor-cache': 'DEBUG'
+        });
     });
 
-    it('should retrieve a key using a builder', function(done) {
-        var cache = raptorCache.createMemoryCache();
-        parallel([
-                function(callback) {
-                    cache.get('hello', function(callback) {
-                        setTimeout(function() {
-                            callback(null, 'world');
-                        }, 100);
-                    }, function(err, value) {
-                        if (err) {
-                            return callback(err);
-                        }
-
-                        expect(value).to.equal('world');
-                        callback();
-                    });
-                }
-            ],
-            done);
+    it('should invoke callback with null for missing cache entry', () => {
+        const cache = raptorCache.createMemoryCache();
+        return cache.get('hello').then((value) => {
+            expect(value == null).to.equal(true);
+        });
     });
 
-    it('should delay reads when a value is being built', function(done) {
-        var cache = raptorCache.createMemoryCache();
-        parallel([
-                function(callback) {
-                    cache.get('hello', function(callback) {
-                        setTimeout(function() {
-                            callback(null, 'world');
-                        }, 100);
-                    }, callback);
-                },
-                function(callback) {
-                    cache.get('hello', function(callback) {
-                        setTimeout(function() {
-                            callback(null, 'world2');
-                        }, 100);
-                    }, callback);
-                },
-                function(callback) {
-                    cache.get('hello', function(err, value) {
-                        expect(value).to.equal('world');
-                        callback();
-                    });
-                }
-            ],
-            done);
+    it('should retrieve a key using a builder', () => {
+        const cache = raptorCache.createMemoryCache();
+        return cache.get('hello', {
+            builder () {
+                return new Promise((resolve) => {
+                    resolve('world');
+                });
+            }
+        }).then((value) => {
+            expect(value).to.equal('world');
+        });
     });
 
-    it('should support createReadStream() with a multi-file disk cache', function(done) {
+    it('should delay reads when a value is being built', () => {
+        var cache = raptorCache.createMemoryCache();
+        return Promise.all([
+            cache.get('hello', {
+                test: 1,
+                builder: function () {
+                    return new Promise((resolve) => {
+                        setTimeout(function () {
+                            resolve('world');
+                        }, 100);
+                    });
+                }
+            }),
+            cache.get('hello', {
+                test: 2,
+                builder: function () {
+                    return new Promise((resolve) => {
+                        setTimeout(function () {
+                            resolve('world2');
+                        }, 100);
+                    });
+                }
+            }),
+            new Promise((resolve) => {
+                setTimeout(() => {
+                    resolve();
+                }, 50);
+            }).then(() => {
+                cache.get('hello', { test: 3 }).then((value) => {
+                    expect(value).to.equal('world');
+                });
+            })
+        ]);
+    });
+
+    it('should support createReadStream() with a multi-file disk cache', () => {
         removeCacheDir(cacheDir);
 
         function createCache() {
-            return raptorCache.createDiskCache({singleFile: false, dir: cacheDir});   
+            return raptorCache.createDiskCache({ singleFile: false, dir: cacheDir });
         }
-        
 
         var reader = function() {
             return fs.createReadStream(nodePath.join(__dirname, 'hello.txt'));
         };
 
         var signature = null;
-
         var cache;
 
-        series([
-                function(callback) {
-                    var shasum = crypto.createHash('sha1');
+        return new Promise((resolve, reject) => {
+            var shasum = crypto.createHash('sha1');
+            var stream = reader();
 
-                    var stream = reader();
-                    stream
-                        .on('data', function(data) {
-                            shasum.update(data);
-                        })
-                        .on('end', function() {
-                            signature = shasum.digest('hex');
-                            callback();
-                        })
-                        .on('error', function(e) {
-                            callback(e);
-                        });
-                },
-                function(callback) {
-                    cache = createCache();
-                    cache.put('hello', reader);
-                    cache.flush(callback);
-                },
-                function(callback) {
+            stream
+                .on('data', function(data) {
+                    shasum.update(data);
+                })
+                .on('end', function() {
+                    signature = shasum.digest('hex');
+                    resolve();
+                })
+                .on('error', function(e) {
+                    reject(e);
+                });
+        }).then(() => {
+            cache = createCache();
+            cache.put('hello', reader);
+            return cache.flush();
+        }).then(() => {
+            return new Promise((resolve, reject) => {
+                cache = createCache();
+                var shasum = crypto.createHash('sha1');
+                var stream = cache.createReadStream('hello');
 
-                    cache = createCache();
-                    var shasum = crypto.createHash('sha1');
-                    var stream = cache.createReadStream('hello');
-                    stream
-                        .on('data', function(data) {
-                            shasum.update(data);
-                        })
-                        .on('end', function() {
-                            expect(shasum.digest('hex')).to.equal(signature);
-                            callback();
-                        })
-                        .on('error', function(e) {
-                            callback(e);
-                        });
-                },
-                function(callback) {
-                    var shasum = crypto.createHash('sha1');
-                    var stream = cache.createReadStream('hello');
-                    stream
-                        .on('data', function(data) {
-                            shasum.update(data);
-                        })
-                        .on('end', function() {
-                            expect(shasum.digest('hex')).to.equal(signature);
-                            callback();
-                        })
-                        .on('error', function(e) {
-                            callback(e);
-                        });
-                }
-            ],
-            done);
+                stream
+                    .on('data', function(data) {
+                        shasum.update(data);
+                    })
+                    .on('end', function() {
+                        expect(shasum.digest('hex')).to.equal(signature);
+                        resolve();
+                    })
+                    .on('error', function(e) {
+                        reject(e);
+                    });
+            });
+        }).then(() => {
+            return new Promise((resolve, reject) => {
+                var shasum = crypto.createHash('sha1');
+                var stream = cache.createReadStream('hello');
+
+                stream
+                    .on('data', function(data) {
+                        shasum.update(data);
+                    })
+                    .on('end', function() {
+                        expect(shasum.digest('hex')).to.equal(signature);
+                        resolve();
+                    })
+                    .on('error', function(e) {
+                        reject(e);
+                    });
+            });
+        });
     });
 });
-

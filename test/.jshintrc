@@ -20,8 +20,8 @@
         "require": true
     },
 
+    "esversion": 6,
     "node" : true,
-    "es5" : false,
     "browser" : true,
     "boss" : false,
     "curly": false,

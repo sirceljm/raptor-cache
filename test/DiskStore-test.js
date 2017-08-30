@@ -1,10 +1,11 @@
+'use strict';
+
 var chai = require('chai');
 chai.Assertion.includeStack = true;
 require('chai').should();
 var expect = require('chai').expect;
 var nodePath = require('path');
 var fs = require('fs');
-var series = require('raptor-async/series');
 var DiskStore = require('../lib/DiskStore');
 var CacheEntry = require('../lib/CacheEntry');
 var extend = require('raptor-util/extend');
@@ -41,44 +42,27 @@ function buffersEqual(actualValue, expectedValue) {
     return true;
 }
 
-function checkValue(store, key, expectedValue, callback) {
-    store.get(key, function(err, cacheEntry) {
-        if (err) {
-            return callback(err);
-        }
-
+function checkValue(store, key, expectedValue) {
+    return store.get(key).then((cacheEntry) => {
         if (!cacheEntry) {
-            if (expectedValue === undefined) {
-                // We are good
-                callback();
-            } else {
-                callback(new Error('Expected value for "' + key + '" to exist'));
+            if (expectedValue !== undefined) {
+                throw new Error('Expected value for "' + key + '" to exist');
             }
             return;
         }
 
         if (cacheEntry.deserialize || cacheEntry.deserialized) {
-            cacheEntry.readValue(function(err, actualValue) {
-                if (err) {
-                    return callback(err);
-                }
-
+            return cacheEntry.readValue().then((actualValue) => {
                 if (typeof expectedValue === 'function') {
                     expectedValue(actualValue);
                 } else {
                     expect(actualValue).to.equal(expectedValue);
                 }
-
-                callback();
             });
         } else {
             expect(store.encoding).to.equal(cacheEntry.encoding);
 
-            cacheEntry.readRaw(function(err, rawValue) {
-                if (err) {
-                    return callback(err);
-                }
-
+            return cacheEntry.readRaw().then((rawValue) => {
                 if (store.encoding) {
                     // if there is an encoding disk store will return decode as string for us
                     expect(rawValue).to.be.a('string');
@@ -89,27 +73,23 @@ function checkValue(store, key, expectedValue, callback) {
                     expect(rawValue).to.be.an.instanceof(Buffer);
                     expect(buffersEqual(rawValue, expectedValue)).to.equal(true);
                 }
-
-                callback();
             });
         }
-
-
     });
 }
 
-function checkValues(store, expected, callback) {
+function checkValues(store, expected) {
+    let promise = Promise.resolve();
 
-    var tasks = Object.keys(expected).map(function(key) {
-        var expectedValue = expected[key];
-        return function(callback) {
-            checkValue(store, key, expectedValue, callback);
-        };
+    Object.keys(expected).forEach((key) => {
+        const expectedValue = expected[key];
+        promise = promise.then(() => {
+            return checkValue(store, key, expectedValue);
+        });
     });
 
-    series(tasks, callback);
+    return promise;
 }
-
 
 var largeFilePath = nodePath.join(__dirname, 'large.txt');
 if (!fs.existsSync(largeFilePath)) {
@@ -173,46 +153,31 @@ describe('raptor-cache/DiskStore' , function() {
     });
 
     stores.forEach(function(storeProvider) {
-        it('should allow flushed store to be read back correctly - ' + storeProvider.label, function(done) {
+        it('should allow flushed store to be read back correctly - ' + storeProvider.label, function() {
             var store = storeProvider.create();
             expect(store.encoding).to.equal('utf8');
 
             store.put('hello', 'world');
             store.put('foo', 'bar');
 
-            series([
-                    function (callback) {
-                        checkValues(store, {
-                            'foo': 'bar',
-                            'hello': 'world',
-                            'missing': undefined
-                        }, callback);
-                    },
-                    function (callback) {
-                        store.flush(function(err) {
-                            if (err) {
-                                return callback(err);
-                            }
-
-                            var store = storeProvider.create();
-                            expect(store.encoding).to.equal('utf8');
-                            checkValues(store, {
-                                'foo': 'bar',
-                                'hello': 'world',
-                                'missing': undefined
-                            }, callback);
-                        });
-                    }
-                ],
-                function (err) {
-                    if (err) {
-                        return done(err);
-                    }
-                    done();
+            return checkValues(store, {
+                'foo': 'bar',
+                'hello': 'world',
+                'missing': undefined
+            }).then(() => {
+                return store.flush();
+            }).then(() => {
+                var store = storeProvider.create();
+                expect(store.encoding).to.equal('utf8');
+                return checkValues(store, {
+                    'foo': 'bar',
+                    'hello': 'world',
+                    'missing': undefined
                 });
+            });
         });
 
-        it('should handle removals correctly - ' + storeProvider.label, function(done) {
+        it('should handle removals correctly - ' + storeProvider.label, function() {
             var store = storeProvider.create();
 
             store.put('hello', 'world');
@@ -221,43 +186,27 @@ describe('raptor-cache/DiskStore' , function() {
             store.put('remove2', 'me2');
             store.remove('remove');
 
-            series([
-                    function (callback) {
-                        checkValues(store, {
-                            'hello': 'world',
-                            'foo': 'bar',
-                            'remove': undefined,
-                            'remove2': 'me2'
-                        }, callback);
-                    },
-                    function (callback) {
-                        store.flush(function(err) {
-                            if (err) {
-                                return callback(err);
-                            }
+            return checkValues(store, {
+                'hello': 'world',
+                'foo': 'bar',
+                'remove': undefined,
+                'remove2': 'me2'
+            }).then(() => {
+                return store.flush();
+            }).then(() => {
+                var store = storeProvider.create();
+                store.remove('remove2');
 
-                            var store = storeProvider.create();
-                            store.remove('remove2');
-
-                            checkValues(store, {
-                                'hello': 'world',
-                                'foo': 'bar',
-                                'remove': undefined,
-                                'remove2': undefined
-                            }, callback);
-                        });
-                    }
-                ],
-                function (err) {
-                    if (err) {
-                        return done(err);
-                    }
-                    done();
+                return checkValues(store, {
+                    'hello': 'world',
+                    'foo': 'bar',
+                    'remove': undefined,
+                    'remove2': undefined
                 });
+            });
         });
 
-        it('should schedule flushes correctly - ' + storeProvider.label, function(done) {
-
+        it('should schedule flushes correctly - ' + storeProvider.label, function() {
             var store = storeProvider.create({
                 flushDelay: 50
             });
@@ -265,34 +214,36 @@ describe('raptor-cache/DiskStore' , function() {
             store.put('schedule', 'flush');
             store.put('foo', 'bar');
 
-            setTimeout(function() {
-                var store = storeProvider.create();
+            return new Promise((resolve, reject) => {
+                setTimeout(function() {
+                    var store = storeProvider.create();
 
-                checkValues(store, {
-                    'schedule': 'flush',
-                    'foo': 'bar'
-                }, done);
-            }, 500);
+                    checkValues(store, {
+                        'schedule': 'flush',
+                        'foo': 'bar'
+                    }).then(resolve).catch(reject);
+                }, 500);
+            });
         });
 
-        it('should handle writes after flush - ' + storeProvider.label, function(done) {
+        it('should handle writes after flush - ' + storeProvider.label, function() {
             var store = storeProvider.create();
             store.put('hello', 'world');
             store.flush();
 
             store.put('foo', 'bar');
 
-            store.flush(function() {
-                var store = storeProvider.create();
+            return store.flush(function() {
+                const store = storeProvider.create();
 
-                checkValues(store, {
+                return checkValues(store, {
                     'hello': 'world',
                     'foo': 'bar'
-                }, done);
+                });
             });
         });
 
-        it('should allow reader for cache entry - ' + storeProvider.label, function(done) {
+        it('should allow reader for cache entry - ' + storeProvider.label, function() {
             var store = storeProvider.create();
 
             store.put('hello', new CacheEntry({
@@ -303,21 +254,17 @@ describe('raptor-cache/DiskStore' , function() {
 
             store.put('foo', 'bar');
 
-            store.flush(function(err) {
-                if (err) {
-                    return done(err);
-                }
-
+            return store.flush().then(() => {
                 var store = storeProvider.create();
 
-                checkValues(store, {
+                return checkValues(store, {
                     'hello': fs.readFileSync(largeFilePath, 'utf8'),
                     'foo': 'bar'
-                }, done);
+                });
             });
         });
 
-        it('should allow binary reader for cache entry - ' + storeProvider.label, function(done) {
+        it('should allow binary reader for cache entry - ' + storeProvider.label, function() {
             var config = {encoding: null};
             var store = storeProvider.create(config);
 
@@ -329,42 +276,43 @@ describe('raptor-cache/DiskStore' , function() {
 
             store.put('foo', new Buffer('bar', 'utf8'));
 
-            store.flush(function(err) {
-                if (err) {
-                    return done(err);
-                }
-
+            return store.flush().then(() => {
                 var store = storeProvider.create(config);
 
-                checkValues(store, {
+                return checkValues(store, {
                     'hello': fs.readFileSync(largeFilePath),
                     'foo': new Buffer('bar', 'utf8')
-                }, done);
+                });
             });
         });
 
-        it('should allow a serializer/deserializer to be used - ' + storeProvider.label, function(done) {
+        it('should allow a serializer/deserializer to be used - ' + storeProvider.label, function() {
             var config = {
                 serialize: function(value) {
                     return JSON.stringify(value);
                 },
-                deserialize: function(reader, callback) {
-                    expect(this.encoding).to.equal('utf8');
-                    expect(store.encoding).to.equal('utf8');
+                deserialize (reader) {
+                    return new Promise((resolve, reject) => {
+                        try {
+                            expect(this.encoding).to.equal('utf8');
+                            expect(store.encoding).to.equal('utf8');
+                        } catch (err) {
+                            return reject(err);
+                        }
 
-                    var json = '';
-                    var stream = reader();
+                        var json = '';
+                        var stream = reader();
 
-                    //expect(strea)
-                    stream
-                        .on('data', function(str) {
-                            expect(typeof str).to.equal('string');
-                            json += str;
-                        })
+                        stream
+                            .on('data', function(str) {
+                                expect(typeof str).to.equal('string');
+                                json += str;
+                            })
 
-                        .on('end', function() {
-                            callback(null, JSON.parse(json));
-                        });
+                            .on('end', function() {
+                                resolve(JSON.parse(json));
+                            });
+                    });
                 }
             };
 
@@ -373,57 +321,52 @@ describe('raptor-cache/DiskStore' , function() {
             store.put('hello', {hello: 'world'});
             store.put('foo', {foo: 'bar'});
 
-            store.flush(function(err) {
-                if (err) {
-                    return done(err);
-                }
-
+            return store.flush().then(() => {
                 var store = storeProvider.create(config);
 
-                checkValues(store, {
+                return checkValues(store, {
                     'hello': function(actual) {
                         expect(actual.hello).to.equal('world');
                     },
                     'foo': function(actual) {
                         expect(actual.foo).to.equal('bar');
                     }
-                }, done);
+                });
             });
         });
 
-        it('should handle re-read after flush - ' + storeProvider.label, function(done) {
+        it('should handle re-read after flush - ' + storeProvider.label, function() {
             var config = {
                 serialize: function(value) {
                     return value;
                 },
-                deserialize: function(reader, callback) {
-                    var data = '';
-                    var stream = reader();
+                deserialize (reader) {
+                    return new Promise((resolve, reject) => {
+                        var data = '';
+                        var stream = reader();
 
-                    //expect(strea)
-                    stream
-                        .on('data', function(str) {
-                            data += str;
-                        })
+                        stream
+                            .on('data', function(str) {
+                                data += str;
+                            })
 
-                        .on('end', function() {
-                            callback(null, data);
-                        });
+                            .on('end', function() {
+                                resolve(data);
+                            });
+                    });
                 }
             };
 
             var store = storeProvider.create(config);
             store.put('foo', 'bar');
 
-            store.flush(function() {
-                store.get('foo', function (err, value) {
-                    value.readValue(function (err, value) {
+            return store.flush().then(() => {
+                return store.get('foo').then((value) => {
+                    return value.readValue().then((value) => {
                         expect(value).to.equal('bar');
-                        done();
                     });
                 });
             });
         });
-
     });
 });

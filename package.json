@@ -11,7 +11,7 @@
     "url": "https://github.com/raptorjs/raptor-cache.git"
   },
   "scripts": {
-    "test": "node_modules/.bin/mocha --ui bdd --reporter spec ./test && node_modules/.bin/jshint lib/"
+    "test": "node_modules/.bin/mocha --ui bdd --reporter spec ./test && node_modules/.bin/eslint lib/ test/"
   },
   "author": "Patrick Steele-Idem <pnidem@gmail.com>",
   "contributors": [
@@ -31,7 +31,12 @@
   },
   "devDependencies": {
     "chai": "^4.1.1",
-    "jshint": "^2.9.1",
+    "eslint": "^4.5.0",
+    "eslint-config-standard": "^10.2.1",
+    "eslint-plugin-import": "^2.7.0",
+    "eslint-plugin-node": "^5.1.1",
+    "eslint-plugin-promise": "^3.5.0",
+    "eslint-plugin-standard": "^3.0.1",
     "mocha": "^3.5.0"
   },
   "license": "Apache-2.0",

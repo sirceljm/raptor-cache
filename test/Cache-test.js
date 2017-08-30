@@ -4,15 +4,13 @@ var chai = require('chai');
 chai.Assertion.includeStack = true;
 require('chai').should();
 var expect = require('chai').expect;
-var parallel = require('raptor-async/parallel');
-var series = require('raptor-async/series');
 var raptorCache = require('../');
 var fs = require('fs');
 var nodePath = require('path');
 var crypto = require('crypto');
 var cacheDir = nodePath.join(__dirname, '.cache');
 
-function removeCacheDir(dir) {
+function removeCacheDir (dir) {
     try {
         var children = fs.readdirSync(dir);
         for (var i = 0; i < children.length; i++) {
@@ -27,17 +25,10 @@ function removeCacheDir(dir) {
         }
 
         fs.rmdirSync(dir);
-    } catch(e) {}
+    } catch (e) {}
 }
 
-describe('raptor-cache' , function() {
-
-    beforeEach(() => {
-        require('raptor-logging').configureLoggers({
-            'raptor-cache': 'DEBUG'
-        });
-    });
-
+describe('raptor-cache', function () {
     it('should invoke callback with null for missing cache entry', () => {
         const cache = raptorCache.createMemoryCache();
         return cache.get('hello').then((value) => {
@@ -96,11 +87,11 @@ describe('raptor-cache' , function() {
     it('should support createReadStream() with a multi-file disk cache', () => {
         removeCacheDir(cacheDir);
 
-        function createCache() {
+        function createCache () {
             return raptorCache.createDiskCache({ singleFile: false, dir: cacheDir });
         }
 
-        var reader = function() {
+        var reader = function () {
             return fs.createReadStream(nodePath.join(__dirname, 'hello.txt'));
         };
 
@@ -112,14 +103,14 @@ describe('raptor-cache' , function() {
             var stream = reader();
 
             stream
-                .on('data', function(data) {
+                .on('data', function (data) {
                     shasum.update(data);
                 })
-                .on('end', function() {
+                .on('end', function () {
                     signature = shasum.digest('hex');
                     resolve();
                 })
-                .on('error', function(e) {
+                .on('error', function (e) {
                     reject(e);
                 });
         }).then(() => {
@@ -133,14 +124,14 @@ describe('raptor-cache' , function() {
                 var stream = cache.createReadStream('hello');
 
                 stream
-                    .on('data', function(data) {
+                    .on('data', function (data) {
                         shasum.update(data);
                     })
-                    .on('end', function() {
+                    .on('end', function () {
                         expect(shasum.digest('hex')).to.equal(signature);
                         resolve();
                     })
-                    .on('error', function(e) {
+                    .on('error', function (e) {
                         reject(e);
                     });
             });
@@ -150,14 +141,14 @@ describe('raptor-cache' , function() {
                 var stream = cache.createReadStream('hello');
 
                 stream
-                    .on('data', function(data) {
+                    .on('data', function (data) {
                         shasum.update(data);
                     })
-                    .on('end', function() {
+                    .on('end', function () {
                         expect(shasum.digest('hex')).to.equal(signature);
                         resolve();
                     })
-                    .on('error', function(e) {
+                    .on('error', function (e) {
                         reject(e);
                     });
             });

@@ -228,18 +228,19 @@ describe('raptor-cache/DiskStore', function () {
         it('should handle writes after flush - ' + storeProvider.label, function () {
             var store = storeProvider.create();
             store.put('hello', 'world');
-            store.flush();
+            return store.flush()
+                .then(() => {
+                    store.put('foo', 'bar');
 
-            store.put('foo', 'bar');
+                    return store.flush().then(() => {
+                        const store = storeProvider.create();
 
-            return store.flush(function () {
-                const store = storeProvider.create();
-
-                return checkValues(store, {
-                    'hello': 'world',
-                    'foo': 'bar'
+                        return checkValues(store, {
+                            'hello': 'world',
+                            'foo': 'bar'
+                        });
+                    });
                 });
-            });
         });
 
         it('should allow reader for cache entry - ' + storeProvider.label, function () {

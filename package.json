@@ -20,7 +20,7 @@
   ],
   "maintainers": "Patrick Steele-Idem <pnidem@gmail.com>",
   "dependencies": {
-    "dissolve": "github:deoxxa/dissolve#eeb806f2bad501548138c8e38d0adcf95d4d1bdb",
+    "dissolve": "^0.3.3",
     "mkdirp": "^0.5.1",
     "property-handlers": "^1.1.1",
     "raptor-async": "^1.1.3",
